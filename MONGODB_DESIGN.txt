@@ -1,0 +1,86 @@
+MongoDB Database Design for Library Application
+
+1. Collections
+---------------------------------------------------------
+a) books
+   Stores information about books, including references to authors and genres, 
+   and embedded reviews.
+
+   Document Structure:
+   {
+     "_id": Integer,              // Custom Auto-Incremented ID
+     "isbn": String,
+     "title": String,
+     "publisher": String,
+     "added_by": Integer,         // Reference to users._id
+     "author_ids": [Integer],     // Array of references to authors._id
+     "genre_ids": [Integer],      // Array of references to genres._id
+     "reviews": [                 // Embedded Array of Sub-documents
+       {
+         "rating": Integer,
+         "text": String,
+         "date": Date,
+         "user_id": Integer       // Reference to users._id (who wrote review)
+       }
+     ]
+   }
+
+b) authors
+   Stores author information. Kept separate to allow reusing authors for multiple books.
+
+   Document Structure:
+   {
+     "_id": Integer,              // Custom Auto-Incremented ID
+     "name": String,
+     "birthdate": Date,
+     "added_by": Integer          // Reference to users._id
+   }
+
+c) genres
+   Stores genre definitions.
+
+   Document Structure:
+   {
+     "_id": Integer,              // Custom Auto-Incremented ID
+     "name": String
+   }
+
+d) users
+   Stores user credentials for application login.
+
+   Document Structure:
+   {
+     "_id": Integer,              // Custom Auto-Incremented ID
+     "username": String,
+     "password": String           // Plaintext for this lab (hashed in production)
+   }
+
+e) counters
+   Helper collection to simulate AUTO_INCREMENT sequences.
+
+   Document Structure:
+   {
+     "_id": String,               // Collection name (e.g. "books_id", "authors_id")
+     "seq": Integer               // Current sequence number
+   }
+
+2. Design Decisions
+---------------------------------------------------------
+- Embedding vs Referencing:
+  - Reviews are embedded in Books because they strictly belong to a specific book 
+    and are always retrieved when viewing that book.
+  - Authors and Genres are referenced (normalized) because they are many-to-many 
+    relationships and we need to be able to select from a list of all existing 
+    authors/genres when adding a book.
+
+- IDs:
+  - We use Integer IDs instead of MongoDB ObjectIds to maintain compatibility 
+    with the existing Java Model (int id).
+  - This requires the 'counters' collection and manual sequence management.
+
+- Transactions:
+  - addBook() inserts a single document into 'books' with references to existing 
+    authors/genres. This is atomic.
+  - No complex multi-document transactions are strictly required for the 
+    core use cases implemented.
+
